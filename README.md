@@ -19,7 +19,7 @@ I have created one table named Truck with following attribute-
 * food_items
 * operational_time
 
-Database - Sqlite3 (oops..)
+Database - PostgreSQL
 
 ### Gems
 
