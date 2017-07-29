@@ -12,28 +12,22 @@ Create a service that tells the user what types of food trucks might be found ne
 
 I have created one table named Truck with following attribute-
 
-name
-facility_type (have kept this one integer because there are three types of facility and used enum to get value of all three.)
-location
-address
-food_items
-operational_time
+*name
+*facility_type (have kept this one integer because there are three types of facility and used enum to get value of all three.)
+*location
+*address
+*food_items
+*operational_time
 
 Database - Sqlite3 (oops..)
 
 ### Gems
 
-Roo
+Roo- I used this one too read file from CSV. Script to read values is in db/seeds.rb and the script itself is in trucks/file.csv.
 
-I used this one too read file from CSV. Script to read values is in db/seeds.rb and the script itself is in trucks/file.csv .
+Twitter-bootstrap-rails- To include bootstrap library.
 
-Twitter-bootstrap-rails
-
-To include bootstrap library.
-
-Jquery-ui-rails
-
-Used this one for slider.
+Jquery-ui-rails- Used this one for slider.
 
 ### Important files
 1. app/views/trucks/index.html.erb- This one contains the main page and Google Maps, reset button and slider javascript code.
