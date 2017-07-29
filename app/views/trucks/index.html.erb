@@ -1,0 +1,199 @@
+<div class="container">
+  <div class="row containerMarginFromTop">
+    <div class="col-sm-10 col-xs-10">
+      <div id="map"></div>
+    </div>
+    <!-- First column end -->
+    <div class="col-sm-2 col-xs-2 text-center">
+      <div class="bg-primary">
+        <h3> Instruction Set </h3>
+      </div>
+      <p class="text-left">
+        <br />
+        1. Click on the map to put a marker. <br />
+        <br />
+        2. Circle is draggable and use slider to increase/decrease size of the circle.  <br />
+      </p>
+      <!-- Paragraph end -->
+        <br />
+        <p>Slider for setting circle radius(1KM to 5KM).</p>
+        <br />
+      <div id="slider">
+        <div id="custom-handle" class="ui-slider-handle"></div>
+      </div>
+      <button type="button" class="btn btn-danger resetMapButton">Reset Map!</button>
+    </div>
+    <!-- Second column end -->
+  </div>
+  <!-- Row end -->
+</div>
+<!-- Container end -->
+
+<!-- Script for google  maps -->
+<script>
+ // Resets map when "Reset map!" button is clicked.
+$( ".btn" ).click(function() {
+  resetMaps()
+});
+// Below function is for slider.
+$( function() {
+    var handle = $( "#custom-handle" );
+    $( "#slider" ).slider({
+      create: function() {
+        handle.text( $( this ).slider( "value" ) );
+      },
+      slide: function( event, ui ) {
+        handle.text( ui.value );
+        // Change radius variable and call function to change the circle object radius.
+        radius = ui.value*1000;
+        if (circle!=null){
+          circle.setRadius(ui.value*1000);
+        }
+      },
+      min:1,
+      max:5,
+      value:1,
+    });
+  });
+  var marker = null;
+  var circle = null;
+  var radius =1000;
+  var markers = [];
+  var map,directionsService;
+  var image = 'https://developers.google.com/maps/documentation/javascript/examples/full/images/beachflag.png';
+  // This function resets map.
+  function resetMaps(){
+    if (marker){
+      marker.setMap(null)
+      circle.setMap(null)
+      directionsDisplay.setMap(null);
+      marker = null
+      circle = null
+    }
+    // Seetting all markers visible
+    for (var i = 0; i < markers.length; i++)
+      markers[i].setVisible(true)
+  }
+  // This function instantiates map.
+ function initMap() {
+   map = new google.maps.Map(document.getElementById('map'));
+   directionsDisplay = new google.maps.DirectionsRenderer({
+     preserveViewport: true
+   });
+    directionsService = new google.maps.DirectionsService();
+
+    // This function sets the route from set marker to the marker clicked on.
+    function calcRoute(origin,destination) {
+      var request = {
+          origin:      origin,
+          destination: destination,
+          travelMode:  google.maps.TravelMode.DRIVING
+
+      };
+      directionsService.route(request, function(response, status) {
+        if (status == google.maps.DirectionsStatus.OK) {
+          directionsDisplay.setDirections(response);
+        }
+      });
+    }
+    all_markers = <%=raw @trucks.to_json %>
+    // variable below is to set bounds in map.
+    var bounds = new google.maps.LatLngBounds();
+    // Setting all the markers of food trucks and push carts on the map.
+    for (var i = 0; i < all_markers.length; i++) {
+      var new_marker = new google.maps.Marker({
+        position: new google.maps.LatLng(all_markers[i].send_three_attributes.lat, all_markers[i].send_three_attributes.lng),
+        map: map
+      });
+      markers.push(new_marker)
+      // Extends bounds of map according to position of marker.
+      bounds.extend(new_marker.position);
+      // Whenever a marker is clicked function below sets its infowindow and calculates route.
+      var infoWindow = new google.maps.InfoWindow()
+      google.maps.event.addListener(new_marker, 'click', function(new_marker, i){
+          return function(){
+            infoWindow.setContent(all_markers[i].send_three_attributes.infowindow);
+            infoWindow.open(map, this);
+            calcRoute(marker.position,new_marker.position)
+            directionsDisplay.setMap(map);
+          }
+      }(new_marker,i));
+    }
+    // Sets Bounds on map after collecting positions.
+    map.fitBounds(bounds);
+    // Code below is to cluster markers
+    // cluster markers
+    // var markerCluster = new MarkerClusterer(handler.getMap(), markers,
+    //             {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'});
+
+    // This one resets markers according to the event occured with circle.
+    function reset_markers(event_type){
+      google.maps.event.addListener(circle, event_type, function(){
+        for (var i = 0; i < markers.length; i++) {
+          if (google.maps.geometry.spherical.computeDistanceBetween(marker.position, markers[i].position) > radius+1){
+            markers[i].setVisible(false)
+          }
+          else{
+            markers[i].setVisible(true)
+          }
+        }
+        // If circle is dragged removes directions if set.
+        if (event_type=="drag") {
+          directionsDisplay.setMap(null);
+        }
+        });
+    }
+    // This function is to set a new marker on map.
+    google.maps.event.addListener(map, 'click', function(event) {
+      // Removes marker if clicked again on map after setting a marker once before
+      if (marker){
+        marker.setMap(null)
+        circle.setMap(null)
+        directionsDisplay.setMap(null);
+      }
+        marker = new google.maps.Marker({
+        position: event.latLng,
+        map: map,
+        animation: google.maps.Animation.DROP,
+        title: "Random location",
+        icon: image
+      });
+      // Changes the focus in map to where marker is set.
+      map.panTo(event.latLng);
+      var infowindow = new google.maps.InfoWindow({
+        content: "Showing all eateries in 1km Radius.",
+      });
+      // Adds infowindow to new set marker when mouse hovers over it.
+      marker.addListener('mouseover', function() {
+        infowindow.open(map, this);
+      });
+      // removes infowindow to new set marker when mouse is not hovering over it.
+      marker.addListener('mouseout', function() {
+        infowindow.close();
+      });
+      // For loop below only shows marker for the trucks which come under the circle's diameter.
+      for (var i = 0; i < markers.length; i++) {
+        if (google.maps.geometry.spherical.computeDistanceBetween(marker.position, markers[i].position) > radius+1){
+          markers[i].setVisible(false)
+        }
+        else{
+          markers[i].setVisible(true)
+        }
+      }
+      // Instantiates circle when clicked around marker.
+      circle = new google.maps.Circle({
+        map: map,
+        radius: radius,
+        fillColor: '#AA0000',
+        draggable: true,
+        geodesic: true,
+      });
+      // When circle is dragged. This functions is called.
+      reset_markers( "drag")
+      // When circle's radius is changed. This functions is called.
+      reset_markers("radius_changed")
+      // Binds circle to the marker position.
+      circle.bindTo('center', marker, 'position');
+    });
+  }
+</script>
