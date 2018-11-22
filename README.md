@@ -39,7 +39,3 @@ Database - PostgreSQL
 7. db/seeds.rb- Contains script to read and create trucks object from CSV file.
 8. config/routes.rb - Contains routes.
 9. Gemfile- Contains gems.
-
-```
-Further I would like to add some react components to it for better UI/UX.
-```
